@@ -1,7 +1,7 @@
-import { Schema } from '../connect.ts';
+// import { Schema } from '../connect.ts';
 
-export interface AttributeModel extends Schema {
-  aid: string;
-  name: string;
-  description: string;
-}
+// export interface AttributeModel extends Schema {
+//   aid: string;
+//   name: string;
+//   description: string;
+// }

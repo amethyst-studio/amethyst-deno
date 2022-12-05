@@ -1,84 +1,132 @@
-import { Collection, cryptoRandomString, UpdateFilter } from "../../deps.ts";
-import { AllowedDatabase, AllowedTable, ConnectOptions, Schema, SimpleConnect } from '../connect.ts';
+import { cryptoRandomString, UpdateFilter } from '../../deps.ts';
+import { AllowedCollection, AllowedConnection, ConnectManager, ConnectOptions, Model, Schema } from '../connect.ts';
+import { TraceSchema } from './trace.model.ts';
 
-export class Session extends SimpleConnect {
-  private static options: SessionOptions;
-  private static collection: Collection<SessionModel>;
+export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
+  public collectionId: AllowedCollection = 'session';
+  public connectionId: AllowedConnection = 'schema';
 
-  public static async createSession(): Promise<SessionModel> {
-    const session: SessionModel = {
-      sid: crypto.randomUUID(),
-      vid: cryptoRandomString({
-        length: 128,
-        type: 'url-safe',
-      }),
-      createdAt: new Date(),
-      lastAccessedAt: new Date(),
-    }
+  private trace: TraceSchema | null = null;
 
-    // Store the Session.
-    await this.collection!.insertOne(session);
+  private constants = {
+    retentionPeriod: 86400,
+  };
 
-    // Return the Session.
-    return session;
-  }
+  public async initialize(): Promise<void> {
+    this.trace = await ConnectManager.getSchema(TraceSchema, null);
 
-  public static async getSession(identifier: string, vref: string): Promise<SessionModel | null> {
-    // Attempt to Update Last Accessed Date for SessionModel.
-    await this.updateSession(identifier, {
-      $set: {
-        'lastAccessedAt': new Date(),
-      }
-    }).catch(() => {});
-
-    // Get and Validate the SessionModel.
-    const session = await this.collection!.findOne({
-      sid: {
-        $eq: identifier,
-      },
-      vid: {
-        $eq: vref,
-      }
-    }) ?? null;
-
-    // Return the SessionModel.
-    return session;
-  }
-
-  public static async updateSession(identifier: string, session: UpdateFilter<SessionModel>): Promise<void> {
-    await this.collection.updateOne({
-      sid: {
-        $eq: identifier,
-      },
-    }, session);
-  }
-
-  public static async initialize(options: SessionOptions): Promise<void> {
-    this.options = options
-    this.collection = (await this.get('model_reuse', this.options.connection)).getCollection<AllowedDatabase, AllowedTable, SessionModel>(this.options.database, 'session');
-
-    // Setup Data Indices
     await this.collection!.createIndexes({
       indexes: [
         {
           key: {
-            'sid': 1,
+            sid: 1,
           },
-          name: 'session_data',
+          name: `data_${this.collectionId}`,
           unique: true,
         },
+        {
+          key: {
+            lastAccessedAt: 1,
+          },
+          name: `expire_${this.collectionId}`,
+          expireAfterSeconds: this.constants.retentionPeriod,
+        },
       ],
+    }).catch((e: Error) => {
+      this.trace!.send({
+        service: 'session-model',
+        status: '500 Internal Server Error',
+        action: 'MESSAGE',
+        context: {
+          message: `Failed to set the "${this.collectionId}" indices.`,
+          error: e.message,
+        },
+      });
     });
+
+    await this.connect?.getConnection().runCommand(this.options.database, {
+      'collMod': this.collectionId,
+      index: {
+        keyPattern: {
+          lastAccessedAt: 1,
+        },
+        expireAfterSeconds: this.constants.retentionPeriod,
+      },
+    }).catch((e: Error) => {
+      this.trace!.send({
+        service: 'session-model',
+        status: '500 Internal Server Error',
+        action: 'MESSAGE',
+        context: {
+          message: `Failed to update the "${this.collectionId}" indices.`,
+          error: e.message,
+        },
+      });
+    });
+  }
+
+  public async createSession(): Promise<SessionModel> {
+    const session: SessionModel = {
+      sid: crypto.randomUUID(),
+      vid: cryptoRandomString({
+        length: 256,
+        type: 'url-safe',
+      }),
+      createdAt: new Date(),
+    };
+    await this.add(session);
+    return session;
+  }
+
+  public async getSession(sid: string, vid: string): Promise<SessionModel | null> {
+    const session = await this.get({
+      sid: {
+        $eq: sid,
+      },
+      vid: {
+        $eq: vid,
+      },
+    });
+
+    if (session !== null) {
+      this.update({
+        sid: {
+          $eq: sid,
+        }
+      }, {
+        $set: {
+          lastAccessedAt: new Date(),
+        },
+      }).catch((e: Error) => {
+        this.trace!.send({
+          service: 'session-model',
+          status: '500 Internal Server Error',
+          action: 'MESSAGE',
+          context: {
+            message: `Unable to update "lastAccessedAt" for session "${sid}".`,
+            error: e.message,
+          },
+        });
+      });
+    }
+
+    return session;
+  }
+
+  public async updateSession(sid: string, update: UpdateFilter<SessionModel>): Promise<void> {
+    update.$set = update.$set ?? {}
+    update.$set.lastUpdatedAt = new Date();
+    await this.update({
+      sid: {
+        $eq: sid,
+      },
+    }, update);
   }
 }
 
-export interface SessionOptions extends ConnectOptions {
-}
-
-export interface SessionModel extends Schema {
+export interface SessionModel extends Model {
   sid: string;
   vid: string;
-  lastAccessedAt: Date;
-  _flash?: Record<string, unknown>;
+  lastAccessedAt?: Date;
   [key: string]: unknown;
 }

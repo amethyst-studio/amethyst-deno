@@ -1,65 +1,50 @@
-import { Collection } from "../../deps.ts";
-import { AllowedDatabase, AllowedTable, ConnectOptions, Schema, SimpleConnect } from '../connect.ts';
+import { AllowedCollection, AllowedConnection, ConnectOptions, Model, Schema } from '../connect.ts';
 
-export class Trace extends SimpleConnect {
-  private static options: TraceOptions;
-  private static collection: Collection<TraceModel>;
+export class TraceSchema extends Schema<TraceModel, TraceOptions> {
+  public collectionId: AllowedCollection = 'trace';
+  public connectionId: AllowedConnection = 'schema';
 
-  private static constant = {
+  private constants = {
     retentionPeriod: 14400,
   };
 
-  public static async sendStatus(event: TraceEvent): Promise<void> {
-    event.context = event.context ?? {};
-    event.context['_EVENT_TYPE'] = 'STATUS_EVENT';
-    const createdAt = new Date();
-    await this.collection!.insertOne({ ...event, server: this.options.server, createdAt });
-    console.info(`[${this.options.server}] (${event.service}) <${createdAt}> - ${event.action} - ${event.status}\n${JSON.stringify(event.context, null)}`);
-  }
-
-  public static async sendError(event: TraceEvent): Promise<void> {
-    event.context = event.context ?? {};
-    event.context['_EVENT_TYPE'] = 'ERROR_STATUS';
-    const createdAt = new Date();
-    await this.collection!.insertOne({ ...event, server: this.options.server, createdAt });
-    console.info(`[${this.options.server}] (${event.service}) <${createdAt}> - ${event.action} - ${event.status}\n${JSON.stringify(event.context, null)}`);
-  }
-
-  public static async initialize(options: TraceOptions): Promise<void> {
-    this.options = options;
-    this.collection = (await this.get('model_reuse', this.options.connection)).getCollection<AllowedDatabase, AllowedTable, TraceModel>(this.options.database, 'trace');
-
-    // Setup Data Retention Indices
+  public async initialize(): Promise<void> {
     await this.collection!.createIndexes({
       indexes: [
         {
           key: {
-            'createdAt': 1,
+            createdAt: 1,
           },
-          name: 'expire_record',
-          expireAfterSeconds: this.constant.retentionPeriod,
+          name: `expire_${this.collectionId}`,
+          expireAfterSeconds: this.constants.retentionPeriod,
         },
       ],
     }).catch((e: Error) => {
-      console.warn('Warning! Failed to set the retention period index! Was our period updated? Did it update successfully?');
-      console.warn(e);
+      console.warn('Failed to set trace indexes.', e.message);
     });
-    await (await this.get('model_reuse')).getConnection().runCommand(this.options!.database, {
-      'collMod': 'trace' as AllowedTable,
+    await this.connect?.getConnection().runCommand(this.options.database, {
+      'collMod': this.collectionId,
       'index': {
-        'keyPattern': {
-          'createdAt': 1,
+        keyPattern: {
+          createdAt: 1,
         },
-        expireAfterSeconds: this.constant.retentionPeriod,
+        expireAfterSeconds: this.constants.retentionPeriod,
       },
     }).catch((e: Error) => {
-      console.warn('Warning! Failed to set the retention period index update! Please investigate.');
-      console.warn(e);
+      console.error('Failed to update trace indexes.', e.message);
     });
+  }
+
+  public async send(event: TraceEvent): Promise<void> {
+    event.context = event.context ?? {};
+    const createdAt = new Date();
+    await this.add({ ...event, server: this.options.server, createdAt });
+    console.info(`[${this.options.server}] (${event.service}) <${createdAt}> - ${event.action} - ${event.status}\n${JSON.stringify(event.context, null)}`);
   }
 }
 
-export interface TraceModel extends Schema {
+/** TraceModel */
+export interface TraceModel extends Model {
   server: string;
   service: string;
   status: TraceStatus;
@@ -115,6 +100,7 @@ export type TraceStatus =
   | '507 Insufficient Storage'
   | '511 Network Authentication Required';
 
+/** TraceAction */
 export type TraceAction =
   | 'INITIALIZATION'
   | 'MESSAGE'

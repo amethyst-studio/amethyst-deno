@@ -1,4 +1,4 @@
-import { Drash } from "../../../deps.ts";
+import { Drash } from '../../deps.ts';
 
 export class AuthenticationService extends Drash.Service {
   private requireSession = false;
@@ -8,7 +8,10 @@ export class AuthenticationService extends Drash.Service {
     this.requireSession = requireSession;
   }
 
-  public override runBeforeResource(request: Drash.Request, response: Drash.Response): void {
+  public override runBeforeResource(
+    request: Drash.Request,
+    response: Drash.Response,
+  ): void {
     console.info('x', this.requireSession);
   }
 }

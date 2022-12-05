@@ -1,4 +1,5 @@
-import { Trace } from "../common/database/model/trace.model.ts";
+import { ConnectManager } from "../common/database/connect.ts";
+import { TraceSchema } from "../common/database/model/trace.model.ts";
 import {
   HTTPServer,
   ResourceLoaderService,
@@ -6,6 +7,10 @@ import {
 import { connect } from "./config.ts";
 
 async function init(): Promise<void> {
+  // Get TraceSchema.
+  const trace = await ConnectManager.getSchema(TraceSchema, connect);
+
+  // Initialize the HTTP Server.
   const server = new HTTPServer({
     id: connect.server,
     server: {
@@ -25,7 +30,7 @@ async function init(): Promise<void> {
   await server.start();
 
   // Notify Initialization
-  await Trace.sendStatus({
+  await trace.send({
     service: connect.server,
     status: "100 Continue",
     action: "INITIALIZATION",

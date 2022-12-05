@@ -1,8 +1,11 @@
-import { ConnectOptions } from '../database/connect.ts';
-import { Session } from '../database/model/session.model.ts';
-import { Trace } from '../database/model/trace.model.ts';
-import { User } from '../database/model/user.model.ts';
+import { ConnectManager, ConnectOptions } from '../database/connect.ts';
+import { SessionSchema } from '../database/model/session.model.ts';
+// import { Session } from '../database/model/session.model.ts';
+import { TraceSchema } from '../database/model/trace.model.ts';
+import { UserSchema } from '../database/model/user.model.ts';
+// import { User } from '../database/model/user.model.ts';
 import { Drash, ResourceLoaderService } from '../deps.ts';
+import { SessionService } from './services/session.service.ts';
 
 export class HTTPServer {
   private options: HTTPServerOptions;
@@ -16,28 +19,16 @@ export class HTTPServer {
   }
 
   private async initialize(): Promise<void> {
-    // Initalize Trace Clients
-    await Trace.initialize(this.options.service.connect);
+    // Initialize Schema Clients.
+    await ConnectManager.getSchema(TraceSchema, this.options.service.connect);
+    await ConnectManager.getSchema(SessionSchema, this.options.service.connect);
+    await ConnectManager.getSchema(UserSchema, this.options.service.connect);
 
-    // Initialize Model Clients
-    await Session.initialize(this.options.service.connect);
-    await User.initialize(this.options.service.connect);
+    // Initialize Trace Client.
+    const trace = await ConnectManager.getSchema(TraceSchema, this.options.service.connect);
 
-    // ---
-    const uid = await User.createUser({
-      email: `${crypto.randomUUID()}@example.com`,
-      emailDeliverable: false,
-      emailVerified: false,
-      firstName: 'Example',
-      lastName: 'User',
-      dateOfBirth: '02/29/2000',
-      role: [],
-      attribute: [],
-    });
-    const userCreated = await User.getUser(uid);
-    console.info('created', userCreated);
-
-    await Trace.sendStatus({
+    // Notification
+    await trace.send({
       service: this.options.id,
       status: '100 Continue',
       action: 'MESSAGE',
@@ -45,6 +36,9 @@ export class HTTPServer {
         message: 'Initializing HTTP Service',
       },
     });
+
+    // Initialize Services
+    await SessionService.initialize(this.options.service.connect);
   }
 
   public async start(): Promise<void> {
@@ -61,7 +55,6 @@ export interface HTTPServerOptions {
   service: {
     connect: ConnectOptions;
   };
-  jwk: JsonWebKey;
 }
 
 export { ResourceLoaderService };
