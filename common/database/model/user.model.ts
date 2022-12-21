@@ -1,3 +1,4 @@
+import { ObjectId, UpdateFilter } from '../../deps.ts';
 import { AllowedCollection, AllowedConnection, ConnectOptions, Model, Schema } from '../connect.ts';
 
 export class UserSchema extends Schema<UserModel, ConnectOptions> {
@@ -12,19 +13,89 @@ export class UserSchema extends Schema<UserModel, ConnectOptions> {
         {
           key: {
             uid: 1,
+          },
+          name: `data_uid_${this.collectionId}`,
+          unique: true,
+        },
+        {
+          key: {
             email: 1,
+          },
+          name: `data_email_${this.collectionId}`,
+          unique: true,
+        },
+        {
+          key: {
             googleUserId: 1,
+          },
+          name: `data_googleUserId_${this.collectionId}`,
+          unique: true,
+        },
+        {
+          key: {
             githubUserId: 1,
+          },
+          name: `data_githubUserId_${this.collectionId}`,
+          unique: true,
+        },
+        {
+          key: {
             gitlabUserId: 1,
+          },
+          name: `data_gitlabUserId_${this.collectionId}`,
+          unique: true,
+        },
+        {
+          key: {
             discordUserId: 1,
           },
-          name: `data_${this.collectionId}`,
+          name: `data_discordUserId_${this.collectionId}`,
           unique: true,
         },
       ],
     }).catch((e: Error) => {
       console.error('Failed to set user indexes.', e.message);
     });
+  }
+
+  public async getUserByIdentifier(identifier: string): Promise<UserModel | null> {
+    return await this.get({
+      $or: [
+        {
+          uid: identifier,
+        },
+        {
+          email: identifier,
+        },
+        {
+          googleUserId: identifier,
+        },
+        {
+          githubUserId: identifier,
+        },
+        {
+          gitlabUserId: identifier,
+        },
+        {
+          discordUserId: identifier,
+        }
+      ]
+    })
+  }
+
+  public async createUser(user: UserModel): Promise<ObjectId> {
+    return await this.add(user);
+  }
+
+  public async updateUser(identifier: string, update: UpdateFilter<UserModel>): Promise<void> {
+    const uid = await this.getUserByIdentifier(identifier);
+    
+    // Verify UID
+    if (uid === null) throw new Error('Unable to locate user for update operation.');
+
+    return await this.update({
+      uid: uid.uid,
+    }, update)
   }
 }
 
@@ -167,6 +238,7 @@ export class UserSchema extends Schema<UserModel, ConnectOptions> {
 
 export interface UserModel extends Model {
   uid: string;
+  authorization: string;
   email: string;
   emailVerified: boolean;
   emailDeliverable: boolean;

@@ -21,7 +21,7 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
           key: {
             sid: 1,
           },
-          name: `data_${this.collectionId}`,
+          name: `data_sid_${this.collectionId}`,
           unique: true,
         },
         {

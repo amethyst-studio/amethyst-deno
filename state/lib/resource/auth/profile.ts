@@ -1,13 +1,13 @@
-import { Drash } from "../../../common/deps.ts";
-import { AuthenticationService } from "../../../common/providers/services/authentication.service.ts";
+import { Drash } from "../../../../common/deps.ts";
+import { AuthenticationService } from "../../../../common/providers/services/authentication.service.ts";
 import {
   SessionedRequest,
   SessionService,
-} from "../../../common/providers/services/session.service.ts";
+} from "../../../../common/providers/services/session.service.ts";
 
 export class ProfileResource extends Drash.Resource {
   public override paths = [
-    "/profile",
+    "/auth/profile",
   ];
 
   public override services: Record<string, Drash.Service[]> = {
@@ -21,10 +21,8 @@ export class ProfileResource extends Drash.Resource {
     request: Drash.Request & SessionedRequest,
     response: Drash.Response,
   ): Promise<void> {
-    request.session!["user"] = "0";
-    await SessionService.persist(request.session);
     return response.json({
-      id: "X-GET",
+      session: request.session,
     });
   }
 

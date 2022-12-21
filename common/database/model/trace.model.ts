@@ -20,7 +20,7 @@ export class TraceSchema extends Schema<TraceModel, TraceOptions> {
         },
       ],
     }).catch((e: Error) => {
-      console.warn('Failed to set trace indexes.', e.message);
+      console.error(`Failed to set the "${this.collectionId}" indices.`, e.message);
     });
     await this.connect?.getConnection().runCommand(this.options.database, {
       'collMod': this.collectionId,
@@ -31,7 +31,7 @@ export class TraceSchema extends Schema<TraceModel, TraceOptions> {
         expireAfterSeconds: this.constants.retentionPeriod,
       },
     }).catch((e: Error) => {
-      console.error('Failed to update trace indexes.', e.message);
+      console.error(`Failed to update the "${this.collectionId}" indices.`, e.message);
     });
   }
 

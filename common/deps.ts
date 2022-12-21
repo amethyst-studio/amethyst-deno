@@ -16,3 +16,7 @@ export { decode as hexDecode, encode as hexEncode } from 'https://deno.land/std@
 /** mongo */
 export { Collection, Database, MongoClient, ObjectId } from 'https://deno.land/x/mongo@v0.31.1/mod.ts';
 export type { Filter, UpdateFilter } from 'https://deno.land/x/mongo@v0.31.1/mod.ts';
+
+/** oaut2_client */
+export { OAuth2Client } from "https://deno.land/x/oauth2_client@v1.0.0/mod.ts";
+export type { OAuth2ClientConfig } from "https://deno.land/x/oauth2_client@v1.0.0/mod.ts";
