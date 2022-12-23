@@ -1,10 +1,17 @@
-import { cryptoRandomString, UpdateFilter } from '../../deps.ts';
-import { AllowedCollection, AllowedConnection, ConnectManager, ConnectOptions, Model, Schema } from '../connect.ts';
-import { TraceSchema } from './trace.model.ts';
+import { cryptoRandomString, UpdateFilter } from "../../deps.ts";
+import {
+  AllowedCollection,
+  AllowedConnection,
+  ConnectManager,
+  ConnectOptions,
+  Model,
+  Schema,
+} from "../connect.ts";
+import { TraceSchema } from "./trace.model.ts";
 
 export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
-  public collectionId: AllowedCollection = 'session';
-  public connectionId: AllowedConnection = 'schema';
+  public collectionId: AllowedCollection = "session";
+  public connectionId: AllowedConnection = "schema";
 
   private trace: TraceSchema | null = null;
 
@@ -34,9 +41,9 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
       ],
     }).catch((e: Error) => {
       this.trace!.send({
-        service: 'session-model',
-        status: '500 Internal Server Error',
-        action: 'MESSAGE',
+        service: "session-model",
+        status: "500 Internal Server Error",
+        action: "MESSAGE",
         context: {
           message: `Failed to set the "${this.collectionId}" indices.`,
           error: e.message,
@@ -45,7 +52,7 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
     });
 
     await this.connect?.getConnection().runCommand(this.options.database, {
-      'collMod': this.collectionId,
+      "collMod": this.collectionId,
       index: {
         keyPattern: {
           lastAccessedAt: 1,
@@ -54,9 +61,9 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
       },
     }).catch((e: Error) => {
       this.trace!.send({
-        service: 'session-model',
-        status: '500 Internal Server Error',
-        action: 'MESSAGE',
+        service: "session-model",
+        status: "500 Internal Server Error",
+        action: "MESSAGE",
         context: {
           message: `Failed to update the "${this.collectionId}" indices.`,
           error: e.message,
@@ -70,7 +77,7 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
       sid: crypto.randomUUID(),
       vid: cryptoRandomString({
         length: 256,
-        type: 'url-safe',
+        type: "url-safe",
       }),
       createdAt: new Date(),
     };
@@ -78,7 +85,10 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
     return session;
   }
 
-  public async getSession(sid: string, vid: string): Promise<SessionModel | null> {
+  public async getSession(
+    sid: string,
+    vid: string,
+  ): Promise<SessionModel | null> {
     const session = await this.get({
       sid: {
         $eq: sid,
@@ -92,16 +102,16 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
       this.update({
         sid: {
           $eq: sid,
-        }
+        },
       }, {
         $set: {
           lastAccessedAt: new Date(),
         },
       }).catch((e: Error) => {
         this.trace!.send({
-          service: 'session-model',
-          status: '500 Internal Server Error',
-          action: 'MESSAGE',
+          service: "session-model",
+          status: "500 Internal Server Error",
+          action: "MESSAGE",
           context: {
             message: `Unable to update "lastAccessedAt" for session "${sid}".`,
             error: e.message,
@@ -113,8 +123,11 @@ export class SessionSchema extends Schema<SessionModel, ConnectOptions> {
     return session;
   }
 
-  public async updateSession(sid: string, update: UpdateFilter<SessionModel>): Promise<void> {
-    update.$set = update.$set ?? {}
+  public async updateSession(
+    sid: string,
+    update: UpdateFilter<SessionModel>,
+  ): Promise<void> {
+    update.$set = update.$set ?? {};
     update.$set.lastUpdatedAt = new Date();
     await this.update({
       sid: {
@@ -128,5 +141,5 @@ export interface SessionModel extends Model {
   sid: string;
   vid: string;
   lastAccessedAt?: Date;
-  [key: string]: unknown;
+  [key: string]: string | unknown;
 }

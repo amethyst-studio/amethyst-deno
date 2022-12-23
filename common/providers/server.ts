@@ -1,11 +1,11 @@
-import { ConnectManager, ConnectOptions } from '../database/connect.ts';
-import { SessionSchema } from '../database/model/session.model.ts';
+import { ConnectManager, ConnectOptions } from "../database/connect.ts";
+import { SessionSchema } from "../database/model/session.model.ts";
 // import { Session } from '../database/model/session.model.ts';
-import { TraceSchema } from '../database/model/trace.model.ts';
-import { UserSchema } from '../database/model/user.model.ts';
+import { TraceSchema } from "../database/model/trace.model.ts";
+import { UserSchema } from "../database/model/user.model.ts";
 // import { User } from '../database/model/user.model.ts';
-import { Drash, ResourceLoaderService } from '../deps.ts';
-import { SessionService } from './services/session.service.ts';
+import { Drash, ResourceLoaderService } from "../deps.ts";
+import { SessionService } from "./services/session.service.ts";
 
 export class HTTPServer {
   private options: HTTPServerOptions;
@@ -25,15 +25,18 @@ export class HTTPServer {
     await ConnectManager.getSchema(UserSchema, this.options.service.connect);
 
     // Initialize Trace Client.
-    const trace = await ConnectManager.getSchema(TraceSchema, this.options.service.connect);
+    const trace = await ConnectManager.getSchema(
+      TraceSchema,
+      this.options.service.connect,
+    );
 
     // Notification
     await trace.send({
       service: this.options.id,
-      status: '100 Continue',
-      action: 'MESSAGE',
+      status: "100 Continue",
+      action: "MESSAGE",
       context: {
-        message: 'Initializing HTTP Service',
+        message: "Initializing HTTP Service",
       },
     });
 

@@ -164,7 +164,7 @@ export abstract class Schema<
 
   /** Access:Exists */
   public async has(filter: Filter<IModel>): Promise<boolean> {
-    return(await this.collection!.countDocuments(filter, {
+    return (await this.collection!.countDocuments(filter, {
       limit: 1,
     }) === 1);
   }
@@ -207,18 +207,18 @@ export interface ConnectOptions {
 }
 
 export type AllowedDatabase =
-  | 'amethyst-dev'
-  | 'amethyst';
+  | "amethyst-dev"
+  | "amethyst";
 export type AllowedConnection =
-  | 'base'
-  | 'command'
-  | 'schema'
-  | 'trace';
+  | "base"
+  | "command"
+  | "schema"
+  | "trace";
 export type AllowedCollection =
   // Secure Tables
-  | 'session'
-  | 'trace'
+  | "session"
+  | "trace"
   // Authentication Tables
-  | 'user'
-  | 'role'
-  | 'attribute';
+  | "user"
+  | "role"
+  | "attribute";

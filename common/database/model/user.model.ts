@@ -1,9 +1,15 @@
-import { ObjectId, UpdateFilter } from '../../deps.ts';
-import { AllowedCollection, AllowedConnection, ConnectOptions, Model, Schema } from '../connect.ts';
+import { ObjectId, UpdateFilter } from "../../deps.ts";
+import {
+  AllowedCollection,
+  AllowedConnection,
+  ConnectOptions,
+  Model,
+  Schema,
+} from "../connect.ts";
 
 export class UserSchema extends Schema<UserModel, ConnectOptions> {
-  public collectionId: AllowedCollection = 'user';
-  public connectionId: AllowedConnection = 'schema';
+  public collectionId: AllowedCollection = "user";
+  public connectionId: AllowedConnection = "schema";
 
   private constants = {};
 
@@ -54,11 +60,13 @@ export class UserSchema extends Schema<UserModel, ConnectOptions> {
         },
       ],
     }).catch((e: Error) => {
-      console.error('Failed to set user indexes.', e.message);
+      console.error("Failed to set user indexes.", e.message);
     });
   }
 
-  public async getUserByIdentifier(identifier: string): Promise<UserModel | null> {
+  public async getUserByIdentifier(
+    identifier: string,
+  ): Promise<UserModel | null> {
     return await this.get({
       $or: [
         {
@@ -78,24 +86,29 @@ export class UserSchema extends Schema<UserModel, ConnectOptions> {
         },
         {
           discordUserId: identifier,
-        }
-      ]
-    })
+        },
+      ],
+    });
   }
 
   public async createUser(user: UserModel): Promise<ObjectId> {
     return await this.add(user);
   }
 
-  public async updateUser(identifier: string, update: UpdateFilter<UserModel>): Promise<void> {
+  public async updateUser(
+    identifier: string,
+    update: UpdateFilter<UserModel>,
+  ): Promise<void> {
     const uid = await this.getUserByIdentifier(identifier);
-    
+
     // Verify UID
-    if (uid === null) throw new Error('Unable to locate user for update operation.');
+    if (uid === null) {
+      throw new Error("Unable to locate user for update operation.");
+    }
 
     return await this.update({
       uid: uid.uid,
-    }, update)
+    }, update);
   }
 }
 
@@ -238,7 +251,7 @@ export class UserSchema extends Schema<UserModel, ConnectOptions> {
 
 export interface UserModel extends Model {
   uid: string;
-  authorization: string;
+  token: string;
   email: string;
   emailVerified: boolean;
   emailDeliverable: boolean;

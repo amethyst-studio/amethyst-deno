@@ -15,7 +15,7 @@ export class GoogleResource extends Drash.Resource {
 
   public override services: Record<string, Drash.Service[]> = {
     ALL: [
-      new SessionService(),
+      new SessionService(true),
     ],
   };
 
@@ -25,12 +25,13 @@ export class GoogleResource extends Drash.Resource {
   ): Promise<void> {
     // Parse State Information.
     const { uri, codeVerifier } = await client.code.getAuthorizationUri();
-    const returnTo = await request.headers.get('ReturnTo');
 
+    
     // Update Session Data.
     request.session!["codeVerifier"] = codeVerifier;
-    request.session!['returnTo'] = returnTo;
+    request.session!['returnTo'] = request.session!['returnTo'] ?? request.headers.get('Forward-Request-To') ?? null;
     await SessionService.persist(request.session);
+    console.info(request.session, request.headers.values())
 
     // Redirect to Google Workflow.
     return this.redirect(uri.toString(), response);

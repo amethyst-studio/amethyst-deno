@@ -4,7 +4,7 @@ const byteToHex: string[] = [];
 export function bufferToHex(arrayBuffer: ArrayBuffer) {
   if (!compile) {
     for (let n = 0; n <= 0xff; ++n) {
-      const hexOctet = n.toString(16).padStart(2, '0');
+      const hexOctet = n.toString(16).padStart(2, "0");
       byteToHex.push(hexOctet);
     }
     compile = true;
@@ -17,5 +17,5 @@ export function bufferToHex(arrayBuffer: ArrayBuffer) {
     octets.push(byteToHex[buff[i]]);
   }
 
-  return octets.join('');
+  return octets.join("");
 }

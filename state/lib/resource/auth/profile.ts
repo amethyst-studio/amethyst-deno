@@ -12,8 +12,8 @@ export class ProfileResource extends Drash.Resource {
 
   public override services: Record<string, Drash.Service[]> = {
     ALL: [
-      new SessionService(),
-      new AuthenticationService(),
+      new SessionService(false),
+      new AuthenticationService(true, true, true),
     ],
   };
 
@@ -22,7 +22,8 @@ export class ProfileResource extends Drash.Resource {
     response: Drash.Response,
   ): Promise<void> {
     return response.json({
-      session: request.session,
+      a: 'b',
+      user: request.user,
     });
   }
 
