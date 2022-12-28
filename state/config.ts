@@ -5,13 +5,13 @@ export const connect: ConnectOptions = {
   server: "dev-1.srv.amethyst.live",
   database: "amethyst-dev",
   connection:
-    "mongodb://root:5f8jUQ8V8PPrN2RW@datasrv.amethyst.live:27017/?authSource=admin&readPreference=primary&ssl=false&directConnection=true",
+    "mongodb://root:@datasrv.amethyst.live:27017/?authSource=admin&readPreference=primary&ssl=false&directConnection=true",
 };
 
 export const googleClient: OAuth2ClientConfig = {
   clientId:
     "316595577511-64tns80n2kc1qt1qmumme7vlenak5vgp.apps.googleusercontent.com",
-  clientSecret: "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",
+  clientSecret: "",
   authorizationEndpointUri: "https://accounts.google.com/o/oauth2/v2/auth",
   tokenUri: "https://www.googleapis.com/oauth2/v4/token",
   redirectUri: "http://localhost:14242/auth/flow/google-connect",
